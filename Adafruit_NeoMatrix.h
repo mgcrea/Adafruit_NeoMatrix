@@ -67,27 +67,30 @@ class Adafruit_NeoMatrix : public Adafruit_GFX, public Adafruit_NeoPixel {
  public:
 
   // Constructor for single matrix:
-  Adafruit_NeoMatrix(int w, int h, uint8_t pin = 6,
+  Adafruit_NeoMatrix(int w, int h, void *frameBuffer, void *drawBuffer, uint8_t pinCount = 8,
     uint8_t matrixType = NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_ROWS,
     uint8_t ledType    = NEO_GRB + NEO_KHZ800);
 
   // Constructor for tiled matrices:
   Adafruit_NeoMatrix(uint8_t matrixW, uint8_t matrixH, uint8_t tX,
-    uint8_t tY, uint8_t pin = 6,
+    uint8_t tY, void *frameBuffer, void *drawBuffer, uint8_t pinCount = 8,
     uint8_t matrixType = NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_ROWS +
                          NEO_TILE_TOP + NEO_TILE_LEFT + NEO_TILE_ROWS,
     uint8_t ledType    = NEO_GRB + NEO_KHZ800);
 
   void
-    drawPixel(int16_t x, int16_t y, uint16_t color),
-    fillScreen(uint16_t color),
-    setRemapFunction(uint16_t (*fn)(uint16_t, uint16_t));
-  static uint16_t
+    drawPixel(int16_t x, int16_t y, uint32_t color),
+    fillScreen(uint32_t color),
+    setRemapFunction(uint16_t (*fn)(uint16_t, uint16_t)),
+    attachSerial(usb_serial_class *s),
+    setMatrixType(uint8_t matrixType);
+  static uint32_t
     Color(uint8_t r, uint8_t g, uint8_t b);
 
  private:
-
-  const uint8_t
+  usb_serial_class
+    *serial;
+  uint8_t
     type;
   const uint8_t
     matrixWidth, matrixHeight, tilesX, tilesY;

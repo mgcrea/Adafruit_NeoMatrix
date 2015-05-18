@@ -39,17 +39,20 @@
 #endif
 
 // Constructor for single matrix:
-Adafruit_NeoMatrix::Adafruit_NeoMatrix(int w, int h, uint8_t pin,
+Adafruit_NeoMatrix::Adafruit_NeoMatrix(int w, int h, void *frameBuffer, void *drawBuffer, uint8_t pinCount,
   uint8_t matrixType, uint8_t ledType) : Adafruit_GFX(w, h),
-  Adafruit_NeoPixel(w * h, pin, ledType), type(matrixType), matrixWidth(w),
-  matrixHeight(h), tilesX(0), tilesY(0), remapFn(NULL) { }
+  Adafruit_NeoPixel(w * h, frameBuffer, drawBuffer, pinCount, ledType), type(matrixType), matrixWidth(w),
+  matrixHeight(h), tilesX(0), tilesY(0), remapFn(NULL) {
+  }
 
 // Constructor for tiled matrices:
+// mW * mH * tX * tY
 Adafruit_NeoMatrix::Adafruit_NeoMatrix(uint8_t mW, uint8_t mH, uint8_t tX,
-  uint8_t tY, uint8_t pin, uint8_t matrixType, uint8_t ledType) :
-  Adafruit_GFX(mW * tX, mH * tY), Adafruit_NeoPixel(mW * mH * tX * tY, pin,
+  uint8_t tY, void *frameBuffer, void *drawBuffer, uint8_t pinCount, uint8_t matrixType, uint8_t ledType) :
+  Adafruit_GFX(mW * tX, mH * tY), Adafruit_NeoPixel(mW * mH, frameBuffer, drawBuffer, pinCount,
   ledType), type(matrixType), matrixWidth(mW), matrixHeight(mH), tilesX(tX),
-  tilesY(tY), remapFn(NULL) { }
+  tilesY(tY), remapFn(NULL) {
+  }
 
 // Expand 16-bit input color (Adafruit_GFX colorspace) to 24-bit (NeoPixel)
 // (w/gamma adjustment)
@@ -60,13 +63,16 @@ static uint32_t expandColor(uint16_t color) {
 }
 
 // Downgrade 24-bit color to 16-bit (add reverse gamma lookup here?)
-uint16_t Adafruit_NeoMatrix::Color(uint8_t r, uint8_t g, uint8_t b) {
-  return ((uint16_t)(r & 0xF8) << 8) |
-         ((uint16_t)(g & 0xFC) << 3) |
-                    (b         >> 3);
+uint32_t Adafruit_NeoMatrix::Color(uint8_t r, uint8_t g, uint8_t b) {
+  return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+  // return ((uint16_t)(r & 0xF8) << 8) |
+  //        ((uint16_t)(g & 0xFC) << 3) |
+  //                   (b         >> 3);
 }
 
-void Adafruit_NeoMatrix::drawPixel(int16_t x, int16_t y, uint16_t color) {
+void Adafruit_NeoMatrix::drawPixel(int16_t x, int16_t y, uint32_t color) {
+
+  // serial->println("drawPixel");
 
   if((x < 0) || (y < 0) || (x >= _width) || (y >= _height)) return;
 
@@ -165,18 +171,26 @@ void Adafruit_NeoMatrix::drawPixel(int16_t x, int16_t y, uint16_t color) {
     }
   }
 
-  setPixelColor(tileOffset + pixelOffset, expandColor(color));
+  setPixelColor(tileOffset + pixelOffset, color);
 }
 
-void Adafruit_NeoMatrix::fillScreen(uint16_t color) {
-  uint16_t i, n;
-  uint32_t c24;
-
-  c24 = expandColor(color);
-  n   = numPixels();
-  for(i=0; i<n; i++) setPixelColor(i, c24);
+void Adafruit_NeoMatrix::fillScreen(uint32_t color) {
+  uint16_t n = numPixels();
+  for(uint16_t i = 0; i < n; i++) {
+    setPixelColor(i, color);
+  }
 }
 
 void Adafruit_NeoMatrix::setRemapFunction(uint16_t (*fn)(uint16_t, uint16_t)) {
   remapFn = fn;
 }
+
+void Adafruit_NeoMatrix::attachSerial(usb_serial_class *s) {
+  serial = s;
+}
+
+void Adafruit_NeoMatrix::setMatrixType(uint8_t matrixType) {
+  type = matrixType;
+}
+
+
